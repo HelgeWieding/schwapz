@@ -35,7 +35,7 @@ public class Square : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (targetPos != transform.position) {
-			transform.position = Vector3.MoveTowards(transform.position, targetPos, 0.05f);
+			transform.position = Vector3.MoveTowards(transform.position, targetPos, 3 * Time.deltaTime);
 		}
 
 		if (targetPos == transform.position && this.swapping) {
@@ -72,16 +72,19 @@ public class Square : MonoBehaviour {
     }
 
 	void OnMouseEnter() {
-		transform.localScale += new Vector3(0.5F, 0.5F, 0);
+		if (!merging && !swapping) 
+			transform.localScale += new Vector3(0.5F, 0.5F, 0);
     }
 
 	void OnMouseExit() {
-		transform.localScale += new Vector3(-0.5F, -0.5F, 0);
+		if (!merging && !swapping) 
+			transform.localScale += new Vector3(-0.5F, -0.5F, 0);
     }
 
 	public void SwapTo(Vector3 targetPos) {
 		this.targetPos = targetPos;
 		this.swapping = true;
+		transform.localScale = new Vector3(5, 5, 5);
 	}
 
 	public void MergeTo(Square targetSquare, bool isLast) {
