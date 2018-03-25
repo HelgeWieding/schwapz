@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class Square : MonoBehaviour {
 
@@ -46,10 +47,15 @@ public class Square : MonoBehaviour {
 		if (targetPos == transform.position && this.merging) {
 			this.merging = false;
 			if (isLastToMerge) {
-				OnMergeComplete(this.targetSquare);
+				Debug.Log("emitting merge compplete");
+				OnMergeComplete(this);
 			}
 			Destroy(gameObject);
 		}
+	}
+
+	void OnMouseDrag () {
+		
 	}
 
 	public void Init (Color color, int depth, int x, int y) {
@@ -95,7 +101,7 @@ public class Square : MonoBehaviour {
 	}
 
 	public void UpdateValue(int value, Color newColor) {
-		this.value += 1;
+		this.value = value;
 		textValue.text = value.ToString();
 		this.GetComponent<SpriteRenderer>().color = newColor;
 	}

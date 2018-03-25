@@ -19,9 +19,6 @@ public class GameManager : MonoBehaviour {
 	public Square lastSquareToMerge;
 	public Square mergeTarget;
 
-	public bool mergeCurrentComplete = false;
-	public bool mergeTargetComplete = false;
-
 	public bool mergeRoundCompleted = true;
 	// Use this for initialization
 	void Start () {
@@ -55,7 +52,7 @@ public class GameManager : MonoBehaviour {
 
 		if (currentSquare == null) {
 			currentSquare = square;
-		} else if (mergeRoundCompleted) {
+		} else {
 			targetSquare = square;
 		}
 		
@@ -67,76 +64,36 @@ public class GameManager : MonoBehaviour {
 			}
 			// swap squares
 			int[] targetPos = new int[2] { targetSquare.x , targetSquare.y };
-			int[] currentPos = new int[2] { currentSquare.x , currentSquare.y };
-			// update pos in grid
-			grid[targetPos[0], targetPos[1]] = currentSquare;
-			grid[currentPos[0], currentPos[1]] = targetSquare;
-			// move actual squares
+			// move squares to new position
 			currentSquare.SwapTo(targetSquare.transform.position);
-			targetSquare.SwapTo(currentSquare.transform.position);
-			currentSquare.SetPos(targetPos[0], targetPos[1]);
-			targetSquare.SetPos(currentPos[0], currentPos[1]);
+			
 		}
 	}
 
 	void OnSwappingComplete (Square square) {
-		if (square == currentSquare) {
-			OnMergeComplete(currentSquare);
-			OnMergeComplete(targetSquare);
-		}
+		int newValue = currentSquare.value + targetSquare.value;
+		targetSquare.UpdateValue(newValue, colors[newValue]);
+		OnMergeComplete(targetSquare);
+		Destroy(currentSquare.gameObject);
 	}
 
 	void OnMergeRoundComplete () {
-		Debug.Log("Merge Round Complete");
-		if (targetSquare != null && currentSquare.value == targetSquare.value) {
-			List<Square> mergeList = CheckValues(currentSquare, null);
-			MergeRound(currentSquare, null, mergeList);
-		} else {
-			currentSquare = null;
-			targetSquare = null;
-			mergeRoundCompleted = true;
-			mergeCurrentComplete = false;
-			mergeTargetComplete = false;
-		}
+		targetSquare = null;
+		mergeRoundCompleted = true;
 	}
 
 	void OnMergeComplete (Square square) {
-		Debug.Log("Merge Complete");
-		if (square == currentSquare) {
-			List<Square> mergeList = CheckValues(currentSquare, targetSquare);
-			if (mergeList.Count > 0) {
-				MergeRound(currentSquare, targetSquare, mergeList);
-			} else {
-				mergeCurrentComplete = true;
-			}
-		}
-	
-		if (square == targetSquare) {
-			List<Square> mergeList2 = CheckValues(targetSquare, currentSquare);
-			if (mergeList2.Count > 0) {
-				MergeRound(targetSquare, currentSquare, mergeList2);	
-			} else {
-				mergeTargetComplete = true;
-			}
-		}
+		// if (square != targetSquare) {
+		// 	int newValue = targetSquare.value + 1;
+		// 	targetSquare.UpdateValue(newValue, colors[newValue]);
+		// }
+		List<Square> mergeList = CheckValues(targetSquare, currentSquare);
 
-		if (targetSquare == null) {
-			mergeTargetComplete = true;
-		}
-		
-		
-		
-		if (mergeCurrentComplete && mergeTargetComplete) {
+		if (mergeList.Count > 0) {
+			Merge(targetSquare, mergeList);
+		} else {
 			OnMergeRoundComplete();
 		}
-	}
-
-	void MergeRound (Square startSquare, Square excludeSquare, List<Square> mergeList) {
-		mergeRoundCompleted = false;
-		int newValue = startSquare.value + 1;
-		Color newColor = colors[newValue];
-		startSquare.UpdateValue(newValue, newColor);
-		Merge(startSquare, mergeList);
 	}
 
 	public void CreateGrid () {
@@ -180,8 +137,10 @@ public class GameManager : MonoBehaviour {
 
 	void Merge (Square target, List<Square> squares) {	
 		foreach (Square square in squares) {
+			// remove square to be merged from grid
 			bool isLast = (square == squares[squares.Count - 1]);
 			square.MergeTo(target, isLast);
+			grid[square.x, square.y] = null;
 		}
 	}
 
