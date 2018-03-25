@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour {
 	public int height;
 	public int depth;
 	public GameObject squarePrefab; 
+	public GameObject nextSquare; 
 	public Color[] colors = new Color[8];
 	public Square[,] grid;
 	public GameObject menu;
@@ -34,47 +35,30 @@ public class GameManager : MonoBehaviour {
 
 
 	void OnEnable () {
-		Square.OnSquareSelected += SquareSelected;
-		Square.OnSwappingComplete += OnSwappingComplete;
-		Square.OnMergeComplete += OnMergeComplete;
+		NextSquare.OnTargetSelected += OnTargetSelected;
+		NextSquare.OnSquareDropped += OnSquareDropped;
 	}
 
 	void OnDisable () {
-		Square.OnSquareSelected -= SquareSelected;
-		Square.OnSwappingComplete -= OnSwappingComplete;
-		Square.OnMergeComplete -= OnMergeComplete;
+		NextSquare.OnTargetSelected -= OnTargetSelected;
+		NextSquare.OnSquareDropped -= OnSquareDropped;
 	}
 
-	void SquareSelected (Square square) {
-		if (targetSquare != null && currentSquare != null) {
-			return;
+	void OnTargetSelected (Square square, Square nextSquare) {
+		if (square != null && targetSquare != null && square != targetSquare) {		
+			targetSquare.UnHighLight();
 		}
 
-		if (currentSquare == null) {
-			currentSquare = square;
-		} else {
+		if (square != null && nextSquare != null) {
 			targetSquare = square;
-		}
-		
-		if (currentSquare != null && targetSquare != null) {
-			if (!AreNeighbours(currentSquare, targetSquare)) {
-				currentSquare = null;
-				targetSquare = null;
-				return;
-			}
-			// swap squares
-			int[] targetPos = new int[2] { targetSquare.x , targetSquare.y };
-			// move squares to new position
-			currentSquare.SwapTo(targetSquare.transform.position);
+			Color newColor = colors[nextSquare.value + square.value];
+			targetSquare.HighLight(nextSquare.value, newColor);
+		} else {
+			if (targetSquare != null) 
+				targetSquare.UnHighLight();
 			
+			targetSquare = null;
 		}
-	}
-
-	void OnSwappingComplete (Square square) {
-		int newValue = currentSquare.value + targetSquare.value;
-		targetSquare.UpdateValue(newValue, colors[newValue]);
-		OnMergeComplete(targetSquare);
-		Destroy(currentSquare.gameObject);
 	}
 
 	void OnMergeRoundComplete () {
@@ -82,18 +66,13 @@ public class GameManager : MonoBehaviour {
 		mergeRoundCompleted = true;
 	}
 
-	void OnMergeComplete (Square square) {
-		// if (square != targetSquare) {
-		// 	int newValue = targetSquare.value + 1;
-		// 	targetSquare.UpdateValue(newValue, colors[newValue]);
-		// }
-		List<Square> mergeList = CheckValues(targetSquare, currentSquare);
-
-		if (mergeList.Count > 0) {
-			Merge(targetSquare, mergeList);
-		} else {
-			OnMergeRoundComplete();
+	void OnSquareDropped (Square square) {
+		if (targetSquare != null) {
+			int newVal = square.value + targetSquare.value;
+			Color newColor = colors[targetSquare.value + square.value];
+			targetSquare.UpdateValue(newVal, newColor);
 		}
+		
 	}
 
 	public void CreateGrid () {
@@ -108,6 +87,17 @@ public class GameManager : MonoBehaviour {
 		}
 		// turn UI off
 		menu.SetActive(false);
+		CreateNextSquare();
+	}
+
+	void CreateNextSquare() {
+		int rand =  Random.Range(1, 3);
+		int[] nextValues = new int[3];
+		Color[] nextColors = new Color[3];
+		GameObject nextObj = Instantiate(nextSquare, new Vector3(width / 2, -1, 0), Quaternion.identity) as GameObject;
+		nextValues[0] = rand;
+		nextColors[0] = colors[rand];
+		nextObj.GetComponent<NextSquare>().Init(nextValues, nextColors);
 	}
 
 	bool AreNeighbours (Square squareOne, Square squareTwo) {

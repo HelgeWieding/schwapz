@@ -270,11 +270,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18a998b177dab4c5980a160469b78551, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 6
-  height: 8
-  depth: 5
+  width: 5
+  height: 6
+  depth: 3
   squarePrefab: {fileID: 1715955924288150, guid: 51435bbb24d814068beec21f206b876c,
     type: 2}
+  nextSquare: {fileID: 1664770435898472, guid: 60a8b5ba85a184320b5e96a9702b5edb, type: 2}
   colors:
   - {r: 0.39705884, g: 0.14889707, b: 0.14889707, a: 1}
   - {r: 0.22550821, g: 0.3701445, b: 0.71323526, a: 1}
@@ -289,6 +290,7 @@ MonoBehaviour:
   targetSquare: {fileID: 0}
   lastSquareToMerge: {fileID: 0}
   mergeTarget: {fileID: 0}
+  mergeRoundCompleted: 1
 --- !u!224 &499419761
 RectTransform:
   m_ObjectHideFlags: 0
@@ -463,8 +465,8 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1441248879}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 3, z: 90}
-  m_LocalScale: {x: 0.012953368, y: 0.012953368, z: 0.012953368}
+  m_LocalPosition: {x: 2, y: 2, z: 90}
+  m_LocalScale: {x: 0.016949153, y: 0.016949153, z: 0.016949153}
   m_Children:
   - {fileID: 10223411}
   m_Father: {fileID: 0}
@@ -486,6 +488,7 @@ GameObject:
   - component: {fileID: 1747416449}
   - component: {fileID: 1747416451}
   - component: {fileID: 1747416450}
+  - component: {fileID: 1747416453}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -549,12 +552,27 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1747416448}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 3, z: -10}
+  m_LocalPosition: {x: 2, y: 2, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1747416453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1747416448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1690312454, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EventMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_MaxRayIntersections: 0
 --- !u!1 &2078457763
 GameObject:
   m_ObjectHideFlags: 0

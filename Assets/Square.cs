@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
 public class Square : MonoBehaviour {
 
 	public GameManager gm;
 	public TextMesh textValue;
 	public int value;
+	public Color color;
 	public int x;
 	public int y;
 
 	public delegate void SquareSelected(Square square);
-	public delegate void SwappingComplete(Square square);
+	public delegate void DraggingComplete(Square square);
 	public delegate void MergeComplete(Square square);
 	public static SquareSelected OnSquareSelected; 
-	public static SwappingComplete OnSwappingComplete;
+	public static DraggingComplete OnDraggingComplete;
 	public static MergeComplete OnMergeComplete;
 
 	public Square targetSquare;
@@ -30,31 +30,11 @@ public class Square : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		targetPos = transform.position;
+		// targetPos = transform.position;
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if (targetPos != transform.position) {
-			transform.position = Vector3.MoveTowards(transform.position, targetPos, 3 * Time.deltaTime);
-		}
-
-		if (targetPos == transform.position && this.swapping) {
-			this.swapping = false;
-			OnSwappingComplete(this);
-		}
-
-		if (targetPos == transform.position && this.merging) {
-			this.merging = false;
-			if (isLastToMerge) {
-				Debug.Log("emitting merge compplete");
-				OnMergeComplete(this);
-			}
-			Destroy(gameObject);
-		}
-	}
-
-	void OnMouseDrag () {
 		
 	}
 
@@ -62,6 +42,7 @@ public class Square : MonoBehaviour {
 		textValue.text = depth.ToString();
 		value = depth;
 		SetPos(x, y);
+		this.color = color;
 		this.GetComponent<SpriteRenderer>().color = color;
 	}
 
@@ -70,22 +51,6 @@ public class Square : MonoBehaviour {
 		this.y = y;
 	}
 
-	void OnMouseDown() {
-		// trigger event to gm
-		if (OnSquareSelected != null) {
-			OnSquareSelected(this);
-		}
-    }
-
-	void OnMouseEnter() {
-		if (!merging && !swapping) 
-			transform.localScale += new Vector3(0.5F, 0.5F, 0);
-    }
-
-	void OnMouseExit() {
-		if (!merging && !swapping) 
-			transform.localScale += new Vector3(-0.5F, -0.5F, 0);
-    }
 
 	public void SwapTo(Vector3 targetPos) {
 		this.targetPos = targetPos;
@@ -100,9 +65,21 @@ public class Square : MonoBehaviour {
 		this.merging = true;
 	}
 
+	public void HighLight(int addVal, Color addColor) {
+		int newVal =  addVal + this.value;
+		textValue.text = newVal.ToString();
+		this.GetComponent<SpriteRenderer>().color = addColor;
+	}
+
+	public void UnHighLight() {
+		textValue.text = this.value.ToString();
+		this.GetComponent<SpriteRenderer>().color = this.color;
+	}
+ 
 	public void UpdateValue(int value, Color newColor) {
 		this.value = value;
 		textValue.text = value.ToString();
+		this.color = newColor;
 		this.GetComponent<SpriteRenderer>().color = newColor;
 	}
 
