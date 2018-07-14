@@ -140,6 +140,12 @@ MonoBehaviour:
   gm: {fileID: 0}
   textValue: {fileID: 102094072365924820}
   value: 0
+  color: {r: 0, g: 0, b: 0, a: 0}
+  x: 0
+  y: 0
+  targetSquare: {fileID: 0}
+  isLastToMerge: 0
+  finalScale: {x: 5, y: 5, z: 5}
 --- !u!212 &212407040137203072
 SpriteRenderer:
   m_ObjectHideFlags: 1
@@ -210,7 +216,7 @@ RectTransform:
   m_GameObject: {fileID: 1715955924288150}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 17.4968, y: 6.922346, z: 0}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 224414669898678930}
   m_Father: {fileID: 0}
