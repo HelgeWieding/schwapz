@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UniRx;
 
 public class GameManager : MonoBehaviour {
 
@@ -10,6 +12,21 @@ public class GameManager : MonoBehaviour {
 	public GameObject squarePrefab; 
 	public GameObject nextSquare; 
 	public Color[] colors = new Color[8];
+	public Color stoneColor;
+
+	public int level = 3;
+
+	public int score = 0;
+
+	public float moveSpeed = 0.2F;
+
+	public float scaleFactor = 0.5F;
+
+	public GameObject scoreText;
+	public GameObject levelText;
+
+	public GameObject ptsTnxtLvl;
+	public int[] levelPoints = new int[10];
 
 	
 	public Square[,] grid;
@@ -17,7 +34,15 @@ public class GameManager : MonoBehaviour {
 	public GameObject menu;
 	public Square currentSquare;
 	public Square targetSquare;
+
 	public delegate void SquareChecked(Square square);
+
+	public delegate void LevelUp(int level);
+
+	// public NextLevel = new Behavi
+	public Subject<int> nextLevel = new Subject<int>();
+
+	public static LevelUp OnLevelUp; 
 	
 
 	public Square lastSquareToMerge;
@@ -28,6 +53,32 @@ public class GameManager : MonoBehaviour {
 	void Start () {
 		// instantiate field	
 		grid = new Square[width,height];
+		this.levelText.GetComponent<Text>().text = "Level " + this.level.ToString();
+		
+		
+		NextSquare.squareDropped.Subscribe(square => {
+			CreateNextSquare();
+			if (targetSquare != null) {
+				int newVal = targetSquare.value + square.value;
+				Color newColor = colors[newVal];
+				targetSquare.UpdateValue(newVal, newColor);
+
+				// clear neighbours
+				List<Square> neighboursToRemove = CheckValues(targetSquare, null);
+				
+				if (neighboursToRemove.Count > 0) {
+					neighboursToRemove.Add(targetSquare);
+					RemoveSquares(neighboursToRemove);
+					grid[targetSquare.x, targetSquare.y] = null;
+				} else {
+					OnRemoveComplete();
+				}		
+			}
+		});
+
+		NextSquare.targetSelected.Subscribe(square => {
+			Debug.Log(square);
+		});
 	}
 
 	
@@ -38,35 +89,13 @@ public class GameManager : MonoBehaviour {
 
 
 	void OnEnable () {
-		NextSquare.OnTargetSelected += OnTargetSelected;
-		NextSquare.OnSquareDropped += OnSquareDropped;
 		Square.OnRemoveComplete += OnRemoveComplete;
 		Square.OnMoveComplete += OnMoveComplete;
 	}
 
 	void OnDisable () {
-		NextSquare.OnTargetSelected -= OnTargetSelected;
-		NextSquare.OnSquareDropped -= OnSquareDropped;
 		Square.OnRemoveComplete -= OnRemoveComplete;
 		Square.OnMoveComplete -= OnMoveComplete;
-	}
-
-
-	void OnTargetSelected (Square square, Square nextSquare) {
-		if (square != null && targetSquare != null && square != targetSquare) {		
-			targetSquare.UnHighLight();
-		}
-
-		if (square != null && nextSquare != null) {
-			targetSquare = square;
-			int newVal = (nextSquare.value + square.value > 6) ? 6 : nextSquare.value + square.value;
-			Color newColor = colors[newVal];
-			targetSquare.HighLight(nextSquare.value, newColor);
-		} else {
-			if (targetSquare != null) 
-				targetSquare.UnHighLight();
-			targetSquare = null;
-		}
 	}
 
 	void OnRemoveComplete () {
@@ -100,31 +129,12 @@ public class GameManager : MonoBehaviour {
 		return found;
 	}
 
-	void OnSquareDropped (Square square) {
-		CreateNextSquare();
-		if (targetSquare != null) {
-			int newVal = (targetSquare.value + square.value > 3) ? 4 : targetSquare.value + square.value;
-			Color newColor = colors[newVal];
-			targetSquare.UpdateValue(newVal, newColor);
-
-			// clear neighbours
-			List<Square> neighboursToRemove = CheckValues(targetSquare, null);
-			
-			RemoveSquares(neighboursToRemove);
-			if (neighboursToRemove.Count > 0) {
-				targetSquare.Remove(false);
-				grid[targetSquare.x, targetSquare.y] = null;
-			} else {
-				OnRemoveComplete();
-			}		
-		}
-	}
-
 	public void CreateGrid () {
 		FillField();
 		// turn UI off
 		menu.SetActive(false);
 		CreateNextSquare();
+		this.nextLevel.OnNext(this.level + 1);
 	}
 
 	void FillField() {
@@ -135,7 +145,7 @@ public class GameManager : MonoBehaviour {
 					int rand =  GenerateValue(x, y);
 					Color color = colors[rand];
 					
-					squareObj.GetComponent<Square>().Init(color, rand, x, y);
+					squareObj.GetComponent<Square>().Init(color, rand, x, y, this.moveSpeed, this.scaleFactor);
 					grid[x,y] = squareObj.GetComponent<Square>();
 				}
 			}
@@ -143,13 +153,13 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void CreateNextSquare() {
-		int rand =  Random.Range(1, 5);
-		int[] nextValues = new int[5];
+		int rand =  Random.Range(1, level + 2);
+		int[] nextValues = new int[level + 2];
 		Color[] nextColors = new Color[5];
 		GameObject nextObj = Instantiate(nextSquare, new Vector3(width / 2, -1, 0), Quaternion.identity) as GameObject;
 		nextValues[0] = rand;
 		nextColors[0] = colors[rand];
-		nextObj.GetComponent<NextSquare>().Init(nextValues, nextColors);
+		nextObj.GetComponent<NextSquare>().Init(nextValues, nextColors, this.moveSpeed, this.scaleFactor);
 	}
 
 	bool AreNeighbours (Square squareOne, Square squareTwo) {
@@ -170,7 +180,7 @@ public class GameManager : MonoBehaviour {
 		foreach (var neighbour in neighbours) {
 			if (neighbour == null) 
 				continue;
-			if (neighbour.value == square.value && neighbour != excludeSquare && square.value <= 3) {
+			if (neighbour.value == square.value && neighbour != excludeSquare && square.value <= level) {
 				neighboursToDelete.Add(neighbour);
 			}
 		} 
@@ -183,7 +193,16 @@ public class GameManager : MonoBehaviour {
 			bool isLast = squares[squares.Count - 1] == square;
 			square.Remove(isLast);
 			grid[square.x, square.y] = null;
+			this.score += square.value;
 		}
+		if (score > this.levelPoints[this.level + 1]) {
+			// OnLevelUp(this.level + 1);
+			this.level += 1;
+			this.levelText.GetComponent<Text>().text = "Level " + this.level.ToString();
+			CheckField();
+		}
+		this.ptsTnxtLvl.GetComponent<Text>().text = "PtsTnxtLvl " + (this.levelPoints[this.level + 1] - this.score).ToString();
+		this.scoreText.GetComponent<Text>().text = "Score " + this.score.ToString();
 	}
 
 	Square[] GetNeighbours (int x, int y) {
@@ -208,51 +227,45 @@ public class GameManager : MonoBehaviour {
 		}
 		return neighbours;
 	}
-
+	
 	void CheckColums (List<int> gapColumns) {
 		foreach (int col in gapColumns) {
 			List<Square> squareList = new List<Square>();
 			int gapCounter = 0;
 
-			for (int y = 0; y < height; y++) {	
-				bool isLast = gapColumns[gapColumns.Count - 1] == col;				
-				if (height - 1 == y) {
-					if (grid[col,y] != null) {
-						squareList.Add(grid[col,y]);
-					}
-					if (gapCounter > 0) {
-						MoveSquares(squareList, gapCounter, isLast);
-						break;
-					}
-				}
+			bool isLast = gapColumns[gapColumns.Count - 1] == col;				
 
-				if (grid[col,y] == null &&  squareList.Count > 0) {	
-					if (gapCounter > 0) {
-						MoveSquares(squareList, gapCounter, isLast);
-						break;
-					}
-				}
-		
+			for (int y = 0; y < height; y++) {		
 				if (grid[col,y] == null) {
 					gapCounter += 1;
-				}
-				
+				}	
+
 				if (grid[col,y] != null && gapCounter > 0) {
 					squareList.Add(grid[col,y]);
 				}
 			}	
+			if (squareList.Count > 0) {	
+				MoveSquares(squareList, gapCounter, isLast);
+			}
 		}
 	}
 
 	List<int> FindGapColumns() {
 		List<int> columns = new List<int>();
+		int longestGap = 0;
 		for (int x = 0; x < width; x++) {
+			int gapCounter = 0;
 			for (int y = 1; y < height; y++) {	
-				if (grid[x,y - 1] == null && grid[x,y] != null) {
-					columns.Add(x);
-					break;
+				if (grid[x,y] == null) {
+					gapCounter += 1;
 				}
 			}	
+			if (longestGap > 0 && gapCounter > longestGap) {
+				columns.Add(x);
+				longestGap = gapCounter;
+			} else if (gapCounter > 0) {
+				columns.Insert(0, x);
+			}
 		}
 		return columns;
 	}
@@ -297,7 +310,7 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	int GenerateValue (int x, int y) {	
+	public int GenerateValue (int x, int y) {	
 	
 		List<int> validColors = new List<int>();
 		// check values to exclude

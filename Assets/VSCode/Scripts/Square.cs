@@ -2,15 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UniRx;
+using UniRx.Triggers;
 
 public class Square : MonoBehaviour {
 
-	public GameManager gm;
+	public GameObject gm;
+	private GameManager gameManager;
 	public TextMesh textValue;
 	public int value;
 	public Color color;
 	public int x;
 	public int y;
+
+	public bool isStoned;
 
 	public delegate void SquareSelected(Square square);
 	public delegate void DraggingComplete(Square square);
@@ -30,6 +35,8 @@ public class Square : MonoBehaviour {
 	bool spawning = false;
 	public bool isLastToRemove = false;
 	public bool isLastToMove = false;
+	float moveSpeed;
+	float scaleFactor;
 	public Vector3 finalScale = new Vector3(5, 5, 1);
 
 
@@ -37,24 +44,38 @@ public class Square : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		// targetPos = transform.position;
+		this.OnMouseDownAsObservable().Subscribe(x => {
+			Debug.Log(x);
+		});
+	}
+
+	void OnEnable () {
+		// GameManager.OnLevelUp += OnLevelUp;
+		gm = GameObject.Find("GameManager");
+		gameManager = gm.GetComponent<GameManager>();
+		this.gameManager.nextLevel.Subscribe(lvl => {
+			Debug.Log(lvl);
+		});
+	}
+
+	void OnDisable () {
+		GameManager.OnLevelUp -= OnLevelUp;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		// spawning
+
 		if (transform.localScale.x < finalScale.x && !removing) {
-			transform.localScale += new Vector3(0.5F, 0.5F, 0);
+			transform.localScale += new Vector3(scaleFactor, scaleFactor, 0);
 		} 
 
 		if (moving && transform.position != targetPos) {
-			transform.position = Vector3.MoveTowards(transform.position, targetPos, 0.2F);
+			transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed);
 		} else if (moving && transform.position == targetPos) {
-			// transform.localPosition = new Vector3(this.x, this.y, 0);
 			moving = false;
 			
 			if (this.isLastToMove) {
-				// Debug.Log(transform.position.y);
-				// Debug.Log(targetPos.y);
 				OnMoveComplete();
 				this.isLastToMove = false;
 			}
@@ -69,16 +90,24 @@ public class Square : MonoBehaviour {
 			if (isLastToRemove) {
 				OnRemoveComplete();	
 			}
-		}
-			
+		}		
 	}
 
-	public void Init (Color color, int depth, int x, int y) {
+	void OnLevelUp(int level) {
+		if (value <= level) {
+			this.GetComponent<SpriteRenderer>().color = this.color;
+			this.isStoned = false;
+		}
+	}
+
+	public void Init (Color color, int depth, int x, int y, float moveSpeed, float scaleFactor) {
 		textValue.text = depth.ToString();
 		value = depth;
 		SetPos(x, y);
 		this.color = color;
 		this.GetComponent<SpriteRenderer>().color = color;
+		this.scaleFactor = scaleFactor;
+		this.moveSpeed = moveSpeed;
 	}
 
 	public void SetPos (int x, int y) {
@@ -101,21 +130,30 @@ public class Square : MonoBehaviour {
 		this.moving = true;	
 	}
 
-	public void HighLight(int addVal, Color addColor) {
-		int newVal =  (addVal + this.value > 3) ? 4 : addVal + this.value;
-		textValue.text = newVal.ToString();
-		this.GetComponent<SpriteRenderer>().color = addColor;
+	public void HighLight(int addVal) {
+		bool tooBig = addVal + this.value > gameManager.level;
+		int newVal =  addVal + this.value;
+		this.textValue.text = newVal.ToString();
+		this.GetComponent<SpriteRenderer>().color = tooBig ? gameManager.stoneColor : gameManager.colors[addVal];
 	}
 
 	public void UnHighLight() {
-		textValue.text = this.value.ToString();
-		this.GetComponent<SpriteRenderer>().color = this.color;
+		this.textValue.text = this.value.ToString();
+		if (this.value <= gameManager.level) {
+			this.GetComponent<SpriteRenderer>().color = this.color;
+		}
 	}
  
 	public void UpdateValue(int value, Color newColor) {
 		this.value = value;
-		textValue.text = value.ToString();
 		this.color = newColor;
-		this.GetComponent<SpriteRenderer>().color = newColor;
+
+		if (this.value > gameManager.level) {
+			this.isStoned = true;
+			this.GetComponent<SpriteRenderer>().color = gameManager.stoneColor;
+		} else {
+			this.textValue.text = this.value.ToString();
+			this.GetComponent<SpriteRenderer>().color = newColor;
+		}
 	}
 }
